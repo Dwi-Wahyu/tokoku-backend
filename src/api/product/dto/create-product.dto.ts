@@ -1,10 +1,10 @@
-import { Type } from 'class-transformer';
 import {
   IsString,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   Min,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -12,21 +12,23 @@ export class CreateProductDto {
   @IsNotEmpty()
   name: string;
 
+  // Menambahkan validasi URL untuk field gambar
+  @IsUrl()
+  @IsOptional()
+  image?: string;
+
   @IsString()
   @IsOptional()
   category?: string;
 
-  @Type(() => Number)
   @IsNumber()
   @Min(0)
   price: number;
 
-  @Type(() => Number)
   @IsNumber()
   @Min(0)
   cost: number;
 
-  @Type(() => Number)
   @IsNumber()
   @Min(0)
   stock: number;

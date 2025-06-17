@@ -1,8 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { promises as fs } from 'fs'; // Untuk operasi file system
-import { join } from 'path';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -24,12 +22,11 @@ export class ProductService {
     return `${categoryCode}-${nameCode}-${paddedId}`;
   }
 
-  async create(createProductDto: CreateProductDto, imagePath?: string) {
+  async create(createProductDto: CreateProductDto) {
     const product = await this.prisma.$transaction(async (tx) => {
       const newProduct = await tx.product.create({
         data: {
-          ...createProductDto,
-          image: imagePath,
+          ...createProductDto, // DTO sudah berisi URL gambar jika ada
           sku: '',
         },
       });
@@ -40,19 +37,21 @@ export class ProductService {
         newProduct.id,
       );
 
-      const updatedProduct = await tx.product.update({
+      return tx.product.update({
         where: { id: newProduct.id },
         data: { sku },
       });
-
-      return updatedProduct;
     });
 
     return product;
   }
 
   findAll() {
-    return this.prisma.product.findMany();
+    return this.prisma.product.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
   async findOne(id: number) {
@@ -63,50 +62,27 @@ export class ProductService {
     return product;
   }
 
-  async update(
-    id: number,
-    updateProductDto: UpdateProductDto,
-    imagePath?: string,
-  ) {
-    const productToUpdate = await this.findOne(id);
+  async update(id: number, updateProductDto: UpdateProductDto) {
+    await this.findOne(id); // Memastikan produk ada
 
-    // Jika ada gambar baru, hapus gambar lama
-    if (imagePath && productToUpdate.image) {
-      try {
-        await fs.unlink(join(process.cwd(), productToUpdate.image));
-      } catch (error) {
-        console.error(
-          `Failed to delete old image: ${productToUpdate.image}`,
-          error,
-        );
-      }
-    }
+    // TODO (Penting): Tambahkan logika untuk menghapus gambar lama dari Vercel Blob
+    // jika field `image` di `updateProductDto` berisi URL baru.
+    // Anda perlu URL gambar lama sebelum melakukan update.
 
     return this.prisma.product.update({
       where: { id },
       data: {
         ...updateProductDto,
-        image: imagePath || productToUpdate.image, // Gunakan gambar baru, atau pertahankan yg lama
       },
     });
   }
 
   async remove(id: number) {
-    const productToDelete = await this.findOne(id);
+    const productToDelete = await this.findOne(id); // Memastikan produk ada
 
-    // Hapus gambar terkait jika ada
-    if (productToDelete.image) {
-      try {
-        await fs.unlink(join(process.cwd(), productToDelete.image));
-      } catch (error) {
-        console.error(
-          `Failed to delete image: ${productToDelete.image}`,
-          error,
-        );
-      }
-    }
+    // TODO (Penting): Tambahkan logika untuk menghapus gambar produk dari Vercel Blob
+    // menggunakan `productToDelete.image` (URL gambar).
 
-    // Hapus produk dari database
     return this.prisma.product.delete({
       where: { id },
     });
