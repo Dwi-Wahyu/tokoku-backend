@@ -1,9 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { DiscountService } from './discount.service';
 import { CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
 
-@Controller('discount')
+@Controller('api/discounts')
 export class DiscountController {
   constructor(private readonly discountService: DiscountService) {}
 
@@ -18,17 +27,20 @@ export class DiscountController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.discountService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.discountService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDiscountDto: UpdateDiscountDto) {
-    return this.discountService.update(+id, updateDiscountDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDiscountDto: UpdateDiscountDto,
+  ) {
+    return this.discountService.update(id, updateDiscountDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.discountService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.discountService.remove(id);
   }
 }
